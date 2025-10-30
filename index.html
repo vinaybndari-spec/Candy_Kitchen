@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candy's Kitchen 🍽</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <h2>🍽 Welcome to Candy's Kitchen</h2>
+  <input id="username" type="text" placeholder="Enter your name">
+  <input id="password" type="password" placeholder="Enter password">
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="mainPage">
+  <header>
+    <h3 id="greeting">Hi User</h3>
+    <div class="search-bar">
+      <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchMenu()">
+    </div>
+    <div>
+      <button onclick="toggleMenu()">☰</button>
+      <div id="menuDropdown">
+        <button onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MENU PAGE -->
+  <div id="menuPage" class="menu-container"></div>
+
+  <!-- CART PAGE -->
+  <div id="cartPage">
+    <h3>Your Cart 🛒</h3>
+    <div id="cartItems"></div>
+    <div id="total"></div>
+    <button id="upiPay" onclick="payUPI()">Pay via UPI</button>
+
+    <div id="ratingSection">
+      <h4>⭐ Rate Your Experience</h4>
+      <span onclick="rate(1)">⭐</span>
+      <span onclick="rate(2)">⭐</span>
+      <span onclick="rate(3)">⭐</span>
+      <span onclick="rate(4)">⭐</span>
+      <span onclick="rate(5)">⭐</span>
+    </div>
+  </div>
+
+  <!-- Notification -->
+  <div id="notify"></div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <button id="homeBtn" class="active" onclick="showPage('menu')">🏠 Home</button>
+    <button onclick="showPage('cart')">🛒 Cart (<span id="cartCount">0</span>)</button>
+    <button id="timerBtn">⏱ <span id="timer">0s</span></button>
+  </div>
+</div>
+
+<script>
+  let username = '';
+  let cart = [];
+  let startTime;
+  let menuItems = [
+    { name: 'Idly', price: 30, img: 'https://upload.wikimedia.org/wikipedia/commons/7/7d/Idli_Sambar.JPG' },
+    { name: 'Dosa', price: 40, img: 'https://upload.wikimedia.org/wikipedia/commons/6/6e/Dosa_dish.jpg' },
+    { name: 'Puri', price: 35, img: 'https://upload.wikimedia.org/wikipedia/commons/2/28/Poori_Bhaji.jpg' },
+    { name: 'Vada', price: 20, img: 'https://upload.wikimedia.org/wikipedia/commons/a/a4/Medu_Vada.jpg' },
+    { name: 'Tea', price: 15, img: 'https://upload.wikimedia.org/wikipedia/commons/d/d8/Indian_tea_cup.jpg' },
+    { name: 'Donda', price: 25, img: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Punugulu.jpg' }
+  ];
+
+  function login() {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value;
+    if (!user || !pass) return alert('Enter both username and password');
+    username = user;
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainPage').style.display = 'block';
+    document.getElementById('greeting').innerText = Hi ${user};
+    startTime = Date.now();
+    startTimer();
+    loadMenu(menuItems);
+  }
+
+  function toggleMenu() {
+    const menu = document.getElementById('menuDropdown');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function logout() { location.reload(); }
+
+  function loadMenu(items) {
+    const menuDiv = document.getElementById('menuPage');
+    menuDiv.innerHTML = '';
+    items.forEach(item => {
+      menuDiv.innerHTML += `
+        <div class="menu-item">
+          <img src="${item.img}">
+          <h4>${item.name}</h4>
+          <p>₹${item.price}</p>
+          <button onclick="addToCart('${item.name}')">Add to Cart</button>
+        </div>`;
+    });
+  }
+
+  function addToCart(name) {
+    const item = menuItems.find(i => i.name === name);
+    cart.push(item);
+    document.getElementById('cartCount').innerText = cart.length;
+    showNotify(${name} added to cart);
+  }
+
+  function renderCart() {
+    const cartDiv = document.getElementById('cartItems');
+    cartDiv.innerHTML = '';
+    let total = 0;
+    cart.forEach((item, i) => {
+      total += item.price;
+      cartDiv.innerHTML += `
+        <div class="cart-item">
+          <span>${item.name} - ₹${item.price}</span>
+          <button onclick="removeItem(${i})">❌ Remove</button>
+        </div>`;
+    });
+    document.getElementById('total').innerText = 'Total: ₹' + total;
+  }
+
+  function removeItem(index) {
+    cart.splice(index, 1);
+    document.getElementById('cartCount').innerText = cart.length;
+    renderCart();
+  }
+
+  function showPage(page) {
+    document.getElementById('menuPage').style.display = (page === 'menu') ? 'grid' : 'none';
+    document.getElementById('cartPage').style.display = (page === 'cart') ? 'block' : 'none';
+    document.querySelectorAll('.bottom-nav button').forEach(btn => btn.classList.remove('active'));
+    if (page === 'menu') document.getElementById('homeBtn').classList.add('active');
+    if (page === 'cart') renderCart();
+  }
+
+  function payUPI() {
+    const total = cart.reduce((sum, i) => sum + i.price, 0);
+    if (total === 0) return alert('Your cart is empty!');
+    const upiLink = upi://pay?pa=9392866782@ybl&pn=CandysKitchen&am=${total}&cu=INR;
+    window.location.href = upiLink;
+    document.getElementById('ratingSection').style.display = 'block';
+    cart = [];
+    document.getElementById('cartCount').innerText = 0;
+    renderCart();
+  }
+
+  function rate(stars) {
+    alert(You rated us ${stars}⭐ — Thank you, ${username}!);
+    document.getElementById('ratingSection').style.display = 'none';
+  }
+
+  function showNotify(msg) {
+    const note = document.getElementById('notify');
+    note.innerText = msg;
+    note.style.display = 'block';
+    setTimeout(() => note.style.display = 'none', 1500);
+  }
+
+  function startTimer() {
+    setInterval(() => {
+      let seconds = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('timer').innerText = seconds + 's';
+    }, 1000);
+  }
+
+  function searchMenu() {
+    const query = document.getElementById('searchBox').value.toLowerCase();
+    const filtered = menuItems.filter(i => i.name.toLowerCase().includes(query));
+    loadMenu(filtered);
+  }
+</script>
+
+</body>
+</html>
